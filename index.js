@@ -25,6 +25,19 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     await client.connect();
+    const db = client.db("recipehub");
+    const recipeCollection = db.collection("recipes");
+
+    // CREATE A NEW RECIPE
+    app.post("/recipes", async (req, res) => {
+      const recipe = {
+        ...req.body,
+        createdAt: new Date(),
+      };
+      const result = await recipeCollection.insertOne(recipe);
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
