@@ -55,6 +55,18 @@ async function run() {
       res.send(recipe);
     });
 
+    // UPDATE A RECIPE BY ID
+    app.patch("/recipes/:id", async (req, res) => {
+      const { id } = req.params;
+      const { ...updateData } = req.body;
+
+      const result = await recipeCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updateData },
+      );
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
