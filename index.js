@@ -45,9 +45,14 @@ async function run() {
         .find({ userId })
         .sort({ createdAt: -1 })
         .toArray();
-      console.log(userId);
-      console.log(recipes);
       res.send(recipes);
+    });
+
+    // GET A SINGLE RECIPE BY ID
+    app.get("/recipes/:id", async (req, res) => {
+      const { id } = req.params;
+      const recipe = await recipeCollection.findOne({ _id: new ObjectId(id) });
+      res.send(recipe);
     });
 
     // Send a ping to confirm a successful connection
