@@ -67,6 +67,15 @@ async function run() {
       res.send(result);
     });
 
+    // DELETE A RECIPE BY ID
+    app.delete("/recipes/:id", async (req, res) => {
+      const { id } = req.params;
+      const result = await recipeCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      res.send(result);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
