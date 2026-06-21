@@ -38,6 +38,18 @@ async function run() {
       res.send(result);
     });
 
+    // GET RECIPES BY USER ID
+    app.get("/recipes/user/:userId", async (req, res) => {
+      const { userId } = req.params;
+      const recipes = await recipeCollection
+        .find({ userId })
+        .sort({ createdAt: -1 })
+        .toArray();
+      console.log(userId);
+      console.log(recipes);
+      res.send(recipes);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
