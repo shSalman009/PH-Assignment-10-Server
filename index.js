@@ -38,6 +38,27 @@ async function run() {
       res.send(result);
     });
 
+    // GET ALL RECIPES
+    app.get("/recipes", async (req, res) => {
+      const { search, category } = req.query;
+      let query = {};
+
+      if (search) {
+        query.name = {
+          $regex: search,
+          $options: "i",
+        };
+      }
+      if (category) {
+        query.category = {
+          $regex: category,
+          $options: "i",
+        };
+      }
+      const recipes = await recipeCollection.find(query).toArray();
+      res.send(recipes);
+    });
+
     // GET RECIPES BY USER ID
     app.get("/recipes/user/:userId", async (req, res) => {
       const { userId } = req.params;
