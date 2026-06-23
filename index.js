@@ -27,6 +27,7 @@ async function run() {
     await client.connect();
     const db = client.db("recipehub");
     const recipeCollection = db.collection("recipes");
+    const transactionsCollection = db.collection("transactions");
 
     // CREATE A NEW RECIPE
     app.post("/recipes", async (req, res) => {
@@ -95,6 +96,26 @@ async function run() {
         _id: new ObjectId(id),
       });
       res.send(result);
+    });
+
+    // CREATE TRANSACTION
+    app.post("/transactions", async (req, res) => {
+      const { sessionId } = req.body;
+      const isExist = await transactionsCollection.findOne({ sessionId });
+
+      if (isExist) {
+        return res.status(200).send({
+          message: "Transaction already processed and saved.",
+          insertedId: isExist._id,
+        });
+      }
+
+      const transaction = {
+        ...req.body,
+        paidAt: new Date(),
+      };
+      const result = await transactionsCollection.insertOne(transaction);
+      res.status(201).send(result);
     });
 
     // Send a ping to confirm a successful connection
