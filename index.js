@@ -59,6 +59,7 @@ async function run() {
     const db = client.db("recipehub");
     const recipeCollection = db.collection("recipes");
     const transactionsCollection = db.collection("transactions");
+    const likesCollection = db.collection("likes");
 
     // CREATE A NEW RECIPE
     app.post("/recipes", verifyToken, async (req, res) => {
@@ -157,7 +158,54 @@ async function run() {
         recipeId,
         userId,
       });
+
+      if (!transaction) {
+        return res.status(404).send({
+          message: "Transaction not found",
+        });
+      }
+
       res.send(transaction);
+    });
+
+    // RECIPE LIKE TOGGELING
+    app.patch("/recipes/:id/like", verifyToken, async (req, res) => {
+      const { id: recipeId } = req.params;
+      const { action } = req.body;
+      const userId = req.user.id;
+
+      const query = {
+        userId: new ObjectId(userId),
+        recipeId: new ObjectId(recipeId),
+      };
+
+      const isLiked = await likesCollection.findOne(query);
+      if (isLiked && action === "like") {
+        return res.status(400).send({ message: "Already liked" });
+      }
+
+      if (action === "like") {
+        await likesCollection.insertOne({
+          ...query,
+          createdAt: new Date(),
+        });
+      } else if (action === "unlike") {
+        await likesCollection.deleteOne(query);
+      }
+
+      const totalLikes = await likesCollection.countDocuments({
+        recipeId: new ObjectId(recipeId),
+      });
+
+      await recipeCollection.updateOne(
+        { _id: new ObjectId(recipeId) },
+        { $set: { likeCount: totalLikes } },
+      );
+
+      res.status(200).send({
+        success: true,
+        likeCount: totalLikes,
+      });
     });
 
     // Send a ping to confirm a successful connection
