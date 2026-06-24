@@ -6,6 +6,7 @@ const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const app = express();
 const cors = require("cors");
 const dotenv = require("dotenv");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
 dotenv.config();
 
 const port = process.env.PORT || 5000;
@@ -22,6 +23,36 @@ const client = new MongoClient(uri, {
   },
 });
 
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.CLIENT_URL}/api/auth/jwks`),
+);
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).send({
+      error: true,
+      message: "Unauthorized access: Missing authorization token.",
+    });
+  }
+
+  const token = authHeader.split(" ")[1];
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    if (payload) {
+      req.user = payload;
+    }
+    next();
+  } catch (error) {
+    return res.status(403).send({
+      error: true,
+      message: "Forbidden access: Invalid or expired token.",
+    });
+  }
+};
+
 async function run() {
   try {
     await client.connect();
@@ -30,7 +61,7 @@ async function run() {
     const transactionsCollection = db.collection("transactions");
 
     // CREATE A NEW RECIPE
-    app.post("/recipes", async (req, res) => {
+    app.post("/recipes", verifyToken, async (req, res) => {
       const recipe = {
         ...req.body,
         createdAt: new Date(),
@@ -61,7 +92,7 @@ async function run() {
     });
 
     // GET RECIPES BY USER ID
-    app.get("/recipes/user/:userId", async (req, res) => {
+    app.get("/recipes/user/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
       const recipes = await recipeCollection
         .find({ userId })
@@ -78,7 +109,7 @@ async function run() {
     });
 
     // UPDATE A RECIPE BY ID
-    app.patch("/recipes/:id", async (req, res) => {
+    app.patch("/recipes/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const { ...updateData } = req.body;
 
@@ -90,7 +121,7 @@ async function run() {
     });
 
     // DELETE A RECIPE BY ID
-    app.delete("/recipes/:id", async (req, res) => {
+    app.delete("/recipes/:id", verifyToken, async (req, res) => {
       const { id } = req.params;
       const result = await recipeCollection.deleteOne({
         _id: new ObjectId(id),
@@ -99,7 +130,7 @@ async function run() {
     });
 
     // CREATE TRANSACTION
-    app.post("/transactions", async (req, res) => {
+    app.post("/transactions", verifyToken, async (req, res) => {
       const { sessionId } = req.body;
       const isExist = await transactionsCollection.findOne({ sessionId });
 
