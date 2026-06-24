@@ -149,6 +149,17 @@ async function run() {
       res.status(201).send(result);
     });
 
+    // GET TRANSACTION BY RECIPE_ID AND USER_ID
+    app.get("/transactions/:recipeId", verifyToken, async (req, res) => {
+      const { recipeId } = req.params;
+      const userId = req.user.id;
+      const transaction = await transactionsCollection.findOne({
+        recipeId,
+        userId,
+      });
+      res.send(transaction);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
