@@ -61,6 +61,7 @@ async function run() {
     const transactionsCollection = db.collection("transactions");
     const likesCollection = db.collection("likes");
     const favoritesCollection = db.collection("favorites");
+    const reportsCollection = db.collection("reports");
 
     // CREATE A NEW RECIPE
     app.post("/recipes", verifyToken, async (req, res) => {
@@ -273,6 +274,16 @@ async function run() {
       }
 
       res.send(favorite);
+    });
+
+    // ADD REPORT
+    app.post("/reports", verifyToken, async (req, res) => {
+      const report = {
+        ...req.body,
+        createdAt: new Date(),
+      };
+      const result = await reportsCollection.insertOne(report);
+      res.send(result);
     });
 
     // Send a ping to confirm a successful connection
