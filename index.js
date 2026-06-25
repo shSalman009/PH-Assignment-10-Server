@@ -256,6 +256,25 @@ async function run() {
       return res.send({ favorite: true });
     });
 
+    // GET A FAVORITE RECIPE BY RECIPE_ID AND USER_ID
+    app.get("/favorites/:id", verifyToken, async (req, res) => {
+      const { id: recipeId } = req.params;
+      const userId = req.user.id;
+
+      const favorite = await favoritesCollection.findOne({
+        recipeId,
+        userId,
+      });
+
+      if (!favorite) {
+        return res.status(404).send({
+          message: "Favorite Recipe not found",
+        });
+      }
+
+      res.send(favorite);
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
