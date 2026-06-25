@@ -60,6 +60,7 @@ async function run() {
     const recipeCollection = db.collection("recipes");
     const transactionsCollection = db.collection("transactions");
     const likesCollection = db.collection("likes");
+    const favoritesCollection = db.collection("favorites");
 
     // CREATE A NEW RECIPE
     app.post("/recipes", verifyToken, async (req, res) => {
@@ -225,6 +226,34 @@ async function run() {
       }
 
       res.send(likeData);
+    });
+
+    // FAVORITE COLLECTION TOGGLE
+    app.patch("/favorites/toggle", verifyToken, async (req, res) => {
+      const { recipeId } = req.body;
+      const { id: userId, email } = req.user;
+      console.log("id's = ", userId, recipeId);
+      const existing = await favoritesCollection.findOne({ userId, recipeId });
+
+      if (existing) {
+        const response = await favoritesCollection.deleteOne({
+          userId,
+          recipeId,
+        });
+        console.log("esisting", response);
+
+        return res.send({ favorite: false });
+      }
+      // Add to favorite
+      const response = await favoritesCollection.insertOne({
+        userId,
+        userEmail: email,
+        recipeId,
+        createdAt: new Date(),
+      });
+      console.log("not existing", response);
+
+      return res.send({ favorite: true });
     });
 
     // Send a ping to confirm a successful connection
