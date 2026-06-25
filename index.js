@@ -175,8 +175,8 @@ async function run() {
       const userId = req.user.id;
 
       const query = {
-        userId: new ObjectId(userId),
-        recipeId: new ObjectId(recipeId),
+        userId: userId,
+        recipeId: recipeId,
       };
 
       const isLiked = await likesCollection.findOne(query);
@@ -194,10 +194,10 @@ async function run() {
       }
 
       const totalLikes = await likesCollection.countDocuments({
-        recipeId: new ObjectId(recipeId),
+        recipeId: recipeId,
       });
 
-      await recipeCollection.updateOne(
+      const d = await recipeCollection.updateOne(
         { _id: new ObjectId(recipeId) },
         { $set: { likeCount: totalLikes } },
       );
@@ -206,6 +206,25 @@ async function run() {
         success: true,
         likeCount: totalLikes,
       });
+    });
+
+    // GET A LIKE BY RECIPE_ID AND USER_ID
+    app.get("/likes/:id", verifyToken, async (req, res) => {
+      const { id: recipeId } = req.params;
+      const userId = req.user.id;
+
+      const likeData = await likesCollection.findOne({
+        recipeId,
+        userId,
+      });
+
+      if (!likeData) {
+        return res.status(404).send({
+          message: "Like not found",
+        });
+      }
+
+      res.send(likeData);
     });
 
     // Send a ping to confirm a successful connection
