@@ -104,6 +104,47 @@ async function run() {
       res.send(recipes);
     });
 
+    // GET USER'S PURCHASED RECIPES
+    app.get("/recipes/purchased", verifyToken, async (req, res) => {
+      const userId = req.user.id;
+
+      const purchasedRecipes = await transactionsCollection
+        .aggregate([
+          {
+            $match: {
+              userId,
+              paymentStatus: "paid",
+            },
+          },
+          {
+            $addFields: {
+              recipeObjectId: { $toObjectId: "$recipeId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "recipes",
+              localField: "recipeObjectId",
+              foreignField: "_id",
+              as: "recipe",
+            },
+          },
+          {
+            $unwind: "$recipe",
+          },
+          {
+            $replaceRoot: {
+              newRoot: {
+                $mergeObjects: ["$recipe", { paidAt: "$paidAt" }],
+              },
+            },
+          },
+        ])
+        .toArray();
+
+      res.send(purchasedRecipes);
+    });
+
     // GET A SINGLE RECIPE BY ID
     app.get("/recipes/:id", async (req, res) => {
       const { id } = req.params;
