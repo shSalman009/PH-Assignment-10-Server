@@ -298,6 +298,42 @@ async function run() {
       return res.send({ favorite: true });
     });
 
+    // GET FAVORITE RECIPES
+    app.get("/favorites", verifyToken, async (req, res) => {
+      const userId = req.user.id;
+
+      const favoriteRecipes = await favoritesCollection
+        .aggregate([
+          {
+            $match: { userId },
+          },
+          {
+            $addFields: {
+              recipeObjectId: { $toObjectId: "$recipeId" },
+            },
+          },
+          {
+            $lookup: {
+              from: "recipes",
+              localField: "recipeObjectId",
+              foreignField: "_id",
+              as: "recipe",
+            },
+          },
+          {
+            $unwind: "$recipe",
+          },
+          {
+            $replaceRoot: {
+              newRoot: "$recipe",
+            },
+          },
+        ])
+        .toArray();
+
+      res.send(favoriteRecipes);
+    });
+
     // GET A FAVORITE RECIPE BY RECIPE_ID AND USER_ID
     app.get("/favorites/:id", verifyToken, async (req, res) => {
       const { id: recipeId } = req.params;
