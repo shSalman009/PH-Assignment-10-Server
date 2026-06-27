@@ -415,6 +415,40 @@ async function run() {
       });
     });
 
+    // GET ADMIN OVERVIEW STATS
+    app.get("/admin/stats", verifyToken, async (req, res) => {
+      try {
+        const totalUsers = await usersCollection.countDocuments({
+          role: "user",
+        });
+
+        const premiumUsers = await usersCollection.countDocuments({
+          isPremium: true,
+        });
+
+        const totalRecipes = await recipeCollection.countDocuments();
+
+        const totalReports = await reportsCollection.countDocuments();
+
+        // Recent Users
+        const recentUsers = await usersCollection
+          .find({})
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .toArray();
+
+        res.status(200).send({
+          totalUsers,
+          premiumUsers,
+          totalRecipes,
+          totalReports,
+          recentUsers,
+        });
+      } catch (error) {
+        res.status(500).send({ error: "Failed to load admin stats" });
+      }
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
