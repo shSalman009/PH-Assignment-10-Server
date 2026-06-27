@@ -466,6 +466,41 @@ async function run() {
       res.send(users);
     });
 
+    // TOGGLE USER STATUS
+    app.patch("/users/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const { id: userId } = req.params;
+      const isBlocked = req.body.status !== "blocked";
+
+      const user = await usersCollection.findOne({
+        _id: new ObjectId(userId),
+      });
+
+      if (!user) {
+        return res.status(404).send({
+          message: "User not found.",
+        });
+      }
+
+      if (user.role === "admin") {
+        return res.status(403).send({
+          message: "Admin accounts cannot be blocked.",
+        });
+      }
+
+      await usersCollection.updateOne(
+        {
+          _id: new ObjectId(userId),
+        },
+        {
+          $set: { isBlocked },
+        },
+      );
+
+      res.send({
+        message: "User status updated successfully.",
+      });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
