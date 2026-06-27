@@ -62,6 +62,7 @@ async function run() {
     const likesCollection = db.collection("likes");
     const favoritesCollection = db.collection("favorites");
     const reportsCollection = db.collection("reports");
+    const usersCollection = db.collection("user");
 
     // CREATE A NEW RECIPE
     app.post("/recipes", verifyToken, async (req, res) => {
@@ -175,7 +176,7 @@ async function run() {
 
     // CREATE TRANSACTION
     app.post("/transactions", verifyToken, async (req, res) => {
-      const { sessionId } = req.body;
+      const { sessionId, type, userId } = req.body;
       const isExist = await transactionsCollection.findOne({ sessionId });
 
       if (isExist) {
@@ -189,7 +190,21 @@ async function run() {
         ...req.body,
         paidAt: new Date(),
       };
+
+      if (type === "premium" && userId) {
+        const userUpdate = await usersCollection.updateOne(
+          { _id: new ObjectId(userId) },
+          { $set: { isPremium: true } },
+        );
+        if (userUpdate.matchedCount === 0) {
+          return res.status(404).send({
+            error: true,
+            message: "Associated user account structure not found.",
+          });
+        }
+      }
       const result = await transactionsCollection.insertOne(transaction);
+
       res.status(201).send(result);
     });
 
