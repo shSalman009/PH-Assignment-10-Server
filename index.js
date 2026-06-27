@@ -426,8 +426,8 @@ async function run() {
       });
     });
 
-    // GET ADMIN OVERVIEW STATS
-    app.get("/admin/stats", verifyToken, async (req, res) => {
+    // GET ADMIN OVERVIEW STATS (ADMIN ONLY)
+    app.get("/admin/stats", verifyToken, verifyAdmin, async (req, res) => {
       try {
         const totalUsers = await usersCollection.countDocuments({
           role: "user",
@@ -458,6 +458,12 @@ async function run() {
       } catch (error) {
         res.status(500).send({ error: "Failed to load admin stats" });
       }
+    });
+
+    // GET ALL USERS (ADMIN ONLY)
+    app.get("/users", verifyToken, verifyAdmin, async (req, res) => {
+      const users = await usersCollection.find().toArray();
+      res.send(users);
     });
 
     // Send a ping to confirm a successful connection
