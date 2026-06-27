@@ -53,6 +53,17 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+const verifyAdmin = async (req, res, next) => {
+  if (req.user.role !== "admin") {
+    return res.status(401).send({
+      error: true,
+      message: "Unauthorized access: Only Admin can do this.",
+    });
+  }
+
+  next();
+};
+
 async function run() {
   try {
     await client.connect();
