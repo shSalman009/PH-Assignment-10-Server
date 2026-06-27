@@ -378,6 +378,43 @@ async function run() {
       res.send(result);
     });
 
+    // GET USER DASHBOARD STATS
+    app.get("/users/:id/stats", verifyToken, async (req, res) => {
+      const userId = req.params.id;
+
+      // Count recipes created by this user
+      const totalRecipes = await recipeCollection.countDocuments({
+        userId: userId,
+      });
+
+      // Count recipes favorited by this user
+      const totalFavorites = await favoritesCollection.countDocuments({
+        userId: userId,
+      });
+
+      // Aggregate total likes received on all recipes authored by this user
+      const likesAggregation = await recipeCollection
+        .aggregate([
+          { $match: { userId } },
+          {
+            $group: {
+              _id: null,
+              totalLikes: { $sum: "$likeCount" },
+            },
+          },
+        ])
+        .toArray();
+
+      const totalLikesReceived =
+        likesAggregation.length > 0 ? likesAggregation[0].totalLikes : 0;
+
+      res.status(200).send({
+        totalRecipes,
+        totalFavorites,
+        totalLikesReceived,
+      });
+    });
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log(
