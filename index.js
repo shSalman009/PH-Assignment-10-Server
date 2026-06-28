@@ -448,6 +448,17 @@ async function run() {
       res.send(reports);
     });
 
+    // DELETE REPORT (ADMIN ONLY)
+    app.delete("/reports/:id", verifyToken, verifyAdmin, async (req, res) => {
+      const { id: reportId } = req.params;
+
+      const result = await reportsCollection.deleteOne({
+        _id: new ObjectId(reportId),
+      });
+
+      res.send(result);
+    });
+
     // GET USER DASHBOARD STATS
     app.get("/users/:id/stats", verifyToken, async (req, res) => {
       const userId = req.params.id;
