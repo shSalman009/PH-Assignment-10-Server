@@ -389,6 +389,54 @@ async function run() {
       res.send(result);
     });
 
+    // GET ALL REPORTS (ADMIN ONLY)
+    app.get("/reports", verifyToken, verifyAdmin, async (req, res) => {
+      const reports = await reportsCollection
+        .aggregate([
+          {
+            $lookup: {
+              from: "recipes",
+              let: {
+                recipeId: {
+                  $toObjectId: "$recipeId",
+                },
+              },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$_id", "$$recipeId"],
+                    },
+                  },
+                },
+                {
+                  $project: {
+                    name: 1,
+                    image: 1,
+                    category: 1,
+                  },
+                },
+              ],
+              as: "recipe",
+            },
+          },
+          {
+            $unwind: {
+              path: "$recipe",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+          {
+            $sort: {
+              createdAt: -1,
+            },
+          },
+        ])
+        .toArray();
+
+      res.send(reports);
+    });
+
     // GET USER DASHBOARD STATS
     app.get("/users/:id/stats", verifyToken, async (req, res) => {
       const userId = req.params.id;
