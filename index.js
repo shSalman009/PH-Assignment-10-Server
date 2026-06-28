@@ -178,10 +178,21 @@ async function run() {
 
     // DELETE A RECIPE BY ID
     app.delete("/recipes/:id", verifyToken, async (req, res) => {
-      const { id } = req.params;
+      const { id: recipeId } = req.params;
+      const { reportId } = req.body;
+
+      // Delete Recipe
       const result = await recipeCollection.deleteOne({
-        _id: new ObjectId(id),
+        _id: new ObjectId(recipeId),
       });
+
+      // If this deletion came from the reports page, delete all the reports associated with the recipe
+      if (reportId && result?.deletedCount === 1) {
+        await reportsCollection.deleteMany({
+          recipeId,
+        });
+      }
+
       res.send(result);
     });
 
