@@ -248,6 +248,51 @@ async function run() {
       res.send(transaction);
     });
 
+    // GET ALL TRANSACTION (ADMIN ONLY)
+    app.get("/transactions", verifyToken, verifyAdmin, async (req, res) => {
+      const transactions = await transactionsCollection
+        .aggregate([
+          {
+            $lookup: {
+              from: "user",
+              let: {
+                userId: {
+                  $toObjectId: "$userId",
+                },
+              },
+              pipeline: [
+                {
+                  $match: {
+                    $expr: {
+                      $eq: ["$_id", "$$userId"],
+                    },
+                  },
+                },
+                {
+                  $project: {
+                    name: 1,
+                    email: 1,
+                    image: 1,
+                  },
+                },
+              ],
+              as: "user",
+            },
+          },
+          {
+            $unwind: "$user",
+          },
+          {
+            $sort: {
+              paidAt: -1,
+            },
+          },
+        ])
+        .toArray();
+
+      res.send(transactions);
+    });
+
     // RECIPE LIKE TOGGELING
     app.patch("/recipes/:id/like", verifyToken, async (req, res) => {
       const { id: recipeId } = req.params;
