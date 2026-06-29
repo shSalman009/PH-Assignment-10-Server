@@ -106,6 +106,15 @@ async function run() {
       res.send(recipes);
     });
 
+    // GET FEATURED RECIPES
+    app.get("/recipes/featured", async (req, res) => {
+      const recipes = await recipeCollection
+        .find({ isFeatured: true })
+        .limit(8)
+        .toArray();
+      res.send(recipes);
+    });
+
     // GET RECIPES BY USER ID
     app.get("/recipes/user/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
