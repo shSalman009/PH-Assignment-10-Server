@@ -115,6 +115,41 @@ async function run() {
       res.send(recipes);
     });
 
+    // GET POPULAR RECIPES
+    app.get("/recipes/popular", async (req, res) => {
+      const recipes = await recipeCollection
+        .aggregate([
+          {
+            $addFields: {
+              userObjectId: {
+                $toObjectId: "$userId",
+              },
+            },
+          },
+          {
+            $lookup: {
+              from: "user",
+              localField: "userObjectId",
+              foreignField: "_id",
+              as: "author",
+            },
+          },
+          {
+            $unwind: "$author",
+          },
+          {
+            $sort: {
+              likeCount: -1,
+            },
+          },
+          {
+            $limit: 8,
+          },
+        ])
+        .toArray();
+      res.send(recipes);
+    });
+
     // GET RECIPES BY USER ID
     app.get("/recipes/user/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params;
